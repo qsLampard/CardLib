@@ -17,7 +17,6 @@ namespace CardLib
 
     private Cards cards = new Cards();
     private Cards PlayedCard = new Cards();
-    private int PlayerIndex;
 
     public Deck()
     {

@@ -17,19 +17,13 @@ namespace CardLib
             index = i;
         }
 
-        bool bigger(kindsOfCombination koc)
+        public bool biggerThan(kindsOfCombination koc)
         {
-            if (this.kind == Kind.Bomb)
-            {
-                if (koc.kind != Kind.Bomb)
-                    return false;
-                return koc.index>this.index;
-            }
-            if (koc.kind == Kind.Bomb)
+            if (koc == null)
                 return true;
-            if (koc.kind != this.kind || koc.assist != this.assist)
-                return false;
-            return koc.index > this.index;
+            if (koc.kind != Kind.Bomb && this.kind == Kind.Bomb)
+                return true;
+            return koc.kind == this.kind && koc.assist == this.assist&&this.index>koc.index  ;
         }
     }
     public enum Kind

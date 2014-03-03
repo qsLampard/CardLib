@@ -11,12 +11,17 @@ namespace CardLib
   public class Player : INotifyPropertyChanged
   {
     public int Index { get; set; }
+    public bool Landlord { get; set; }
     protected Cards Hand { get; set; }
     protected Cards Chosen { get; set; }
     private string _name;
     private PlayerState _state;
 
-    public event EventHandler<CardEventArgs> OnCardDiscarded;
+    public Player()
+    {
+        Landlord = false;
+    }
+    //public event EventHandler<CardEventArgs> OnCardDiscarded;
     public event EventHandler<CardEventArgs> OnCardPlayed;
     public event EventHandler<PlayerEventArgs> OnPlayerHasWon;
 
@@ -96,9 +101,9 @@ namespace CardLib
         if (Chosen.Count == 5)
         {
             if (Chosen[0].rank == Chosen[1].rank && Chosen[0].rank == Chosen[2].rank && Chosen[3].rank == Chosen[4].rank)
-                return new kindsOfCombination(Kind.Three, 1, (int)Chosen[0].rank);    //full house
+                return new kindsOfCombination(Kind.Three, 2, (int)Chosen[0].rank);    //full house
             if (Chosen[0].rank == Chosen[1].rank && Chosen[2].rank == Chosen[3].rank && Chosen[2].rank == Chosen[4].rank)
-                return new kindsOfCombination(Kind.Three, 1, (int)Chosen[2].rank);   //full house
+                return new kindsOfCombination(Kind.Three, 2, (int)Chosen[2].rank);   //full house
         }
         if (Chosen.Count >= 6 && Chosen.Count % 2 == 0)
         {   
@@ -130,7 +135,7 @@ namespace CardLib
     {
       AddCard(deck.Draw());
     }
-
+    /*
     public void DiscardCard(Card card)
     {
       Hand.Remove(card);
@@ -139,10 +144,13 @@ namespace CardLib
       if (OnCardDiscarded != null)
         OnCardDiscarded(this, new CardEventArgs { Card = card });
     }
-
-    public void play()
+      */
+    public void play(kindsOfCombination k)
     {
-        if (validCards() == null)
+        kindsOfCombination result = validCards();
+        if (result == null)
+            return;
+        if (!result.biggerThan(k))
             return;
         for (int i = 0; i < Chosen.Count;i++ )
             Hand.Remove(Chosen[i]);
@@ -150,13 +158,19 @@ namespace CardLib
         args.Card = new Card((Suit)1,(Rank)3);
         args.Cards = (Cards)Chosen.Clone();
         args.index = Index;
+        args.CurrentCombination = result;
         OnCardPlayed(this, args); 
         Chosen.Clear();
+        if (HasWon && OnPlayerHasWon != null)
+            OnPlayerHasWon(this, new PlayerEventArgs { Player = this, State = PlayerState.Winner });
     }
 
-    public void pass()
+    public void pass(int CardsPlayer)
     {
+        if (Index == CardsPlayer)
+            return;
         Chosen.Clear();
+        this._state = PlayerState.Pass;
         OnCardPlayed(this, new CardEventArgs { Cards=new Cards() }); 
     }
 
@@ -164,8 +178,13 @@ namespace CardLib
     {
       Hand = new Cards();
       Chosen = new Cards();
-      for (int i = 0; i < 18; i++)
+      for (int i = 0; i < 17; i++)
         Hand.Add(deck.Draw());
+      if (Landlord)
+      {
+          for (int i = 0; i < 3; i++)
+              Hand.Add(deck.Draw());
+      }
       Hand.Sort();
     }
 

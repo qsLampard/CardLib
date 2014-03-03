@@ -37,19 +37,19 @@ namespace CardLib
       set { /* Do nothing, name is calculated */ }
     }
 
-    public void PerformDraw(Deck deck, Card availableCard)
+    public void Perform(kindsOfCombination combination, int CardPlayer)
     {
       switch (Skill)
       {
         case ComputerSkillLevel.Easy:
-          pass();//DrawCard(deck);
+          decision(combination,CardPlayer);//DrawCard(deck);
           break;
         default:
-          pass();//DrawBestCard(deck, availableCard, (Skill == ComputerSkillLevel.Hard));
+          pass(0);//DrawBestCard(deck, availableCard, (Skill == ComputerSkillLevel.Hard));
           break;
       }
     }
-
+/*
     public void PerformDiscard(Deck deck)
     {
       switch (Skill)
@@ -62,6 +62,178 @@ namespace CardLib
           DiscardWorstCard();
           break;
       }
+    }
+*/
+
+    private void decision(kindsOfCombination combination, int CardPlayer)
+    {
+        if(Index == CardPlayer)
+            combination=null;
+        if (combination == null)  //free to play
+            Chosen.Add(Hand[0]);
+        else
+        {
+            if (combination.kind == Kind.Single)
+                DealwithSingle(combination, CardPlayer);
+            else if (combination.kind == Kind.Pair)
+                DealwithPair(combination, CardPlayer);
+            else if (combination.kind == Kind.Three)
+                DealwithThree(combination, CardPlayer);
+            else if (combination.kind == Kind.Bomb)
+                DealwithBomb(combination, CardPlayer);
+            else if (combination.kind == Kind.Straight)
+                DealwithStraight(combination, CardPlayer);
+            else if (combination.kind == Kind.StraightPair)
+                DealwithStraightPair(combination, CardPlayer);
+        }
+        if (Chosen.Count > 0)
+            play(null);
+        else
+            pass(CardPlayer);
+    }
+
+
+    private void DealwithSingle(kindsOfCombination combination, int CardPlayer)
+    {
+        foreach (Card c in Hand)
+        {
+            if (c.rank > (Rank)combination.index)
+            {
+                Chosen.Add(c);
+                break;
+            }
+        }
+    }
+
+    private void DealwithPair(kindsOfCombination combination, int CardPlayer)
+    {
+        for (int i = 0; i < Hand.Count - 1; i++)
+        {
+            if (Hand[i].rank == Hand[i + 1].rank && Hand[i].rank > (Rank)combination.index)
+            {
+                Chosen.Add(Hand[i]);
+                Chosen.Add(Hand[i + 1]);
+                break;
+            }
+        }
+    }
+
+    private void DealwithThree(kindsOfCombination combination, int CardPlayer)
+    {
+        for (int i = 0; i < Hand.Count - 2; i++)
+        {
+            if (Hand[i].rank == Hand[i + 1].rank && Hand[i].rank == Hand[i + 2].rank && Hand[i].rank > (Rank)combination.index)
+            {
+                Chosen.Add(Hand[i]);
+                Chosen.Add(Hand[i + 1]);
+                Chosen.Add(Hand[i + 2]);
+                break;
+            }
+        }
+        if (combination.assist == 1)
+        {
+            for (int i = 0; i < Hand.Count; i++)
+            {
+                if (!Chosen.Contains(Hand[i]))
+                {
+                    Chosen.Add(Hand[i]);
+                    break;
+                }
+            }
+            if (Chosen.Count != 4)
+                Chosen.Clear();
+        }
+        else if (combination.assist == 2)
+        {
+            for (int i = 0; i < Hand.Count - 1; i++)
+            {
+                if (!Chosen.Contains(Hand[i]) && !Chosen.Contains(Hand[i + 1]))
+                {
+                    Chosen.Add(Hand[i]);
+                    Chosen.Add(Hand[i + 1]);
+                    break;
+                }
+            }
+            if (Chosen.Count != 5)
+                Chosen.Clear();
+        }
+        if (Chosen.Count == 0 && combination.index >= 10)   //use bomb
+            DealwithBomb(combination, CardPlayer);
+    }
+
+    private void DealwithBomb(kindsOfCombination combination, int CardPlayer)
+    {
+        for (int i = 0; i < Hand.Count - 3; i++)
+        {
+            if (Hand[i].rank == Hand[i + 1].rank && Hand[i].rank == Hand[i + 2].rank && Hand[i].rank == Hand[i + 3].rank && Hand[i].rank > (Rank)combination.index)
+            {
+                Chosen.Add(Hand[i]);
+                Chosen.Add(Hand[i + 1]);
+                Chosen.Add(Hand[i + 2]);
+                Chosen.Add(Hand[i + 3]);
+                break;
+            }
+        }
+        if (Chosen.Count != 4 && Hand.Count >= 2 && Hand[Hand.Count - 1].rank == Rank.Joker && Hand[Hand.Count - 2].rank == Rank.joker)
+        {
+            Chosen.Add(Hand[Hand.Count - 1]);
+            Chosen.Add(Hand[Hand.Count - 2]);
+        }
+    }
+      
+    private void DealwithStraight(kindsOfCombination combination, int CardPlayer)
+    {
+        for (int i = 0; i < Hand.Count ; i++)
+        {
+            if (Chosen.Count == 0)
+            {
+                if (Hand[i].rank > (Rank)combination.index)
+                    Chosen.Add(Hand[i]);
+            }
+            else if (Hand[i].rank == Chosen.Last().rank + 1 && Hand[i].rank < (Rank)15)
+                Chosen.Add(Hand[i]);
+            else if (Hand[i].rank > Chosen.Last().rank + 1)
+                Chosen.Clear();
+            if (Chosen.Count == combination.assist)
+                break;
+        }
+        if (Chosen.Count != combination.assist)
+            Chosen.Clear();
+        if (Chosen.Count == 0 && combination.assist >= 7)   //use bomb
+            DealwithBomb(combination, CardPlayer);
+    }
+
+    private void DealwithStraightPair(kindsOfCombination combination, int CardPlayer)
+    {
+        bool chooseFirst = true;
+        for (int i = 0; i < Hand.Count - 3; i++)
+        {
+            if (Chosen.Count == 0)
+            {
+                if (Hand[i].rank > (Rank)combination.index)
+                    Chosen.Add(Hand[i]);
+            }
+            else if (chooseFirst&&Hand[i].rank == Chosen.Last().rank && Hand[i].rank < (Rank)15)
+            {
+                chooseFirst = false;
+                Chosen.Add(Hand[i]);
+            }
+            else if (chooseFirst && Hand[i].rank > Chosen.Last().rank && Hand[i].rank < (Rank)15)
+                Chosen.Clear();
+            else if (!chooseFirst && Hand[i].rank == Chosen.Last().rank + 1 && Hand[i].rank < (Rank)15)
+            {
+                chooseFirst = true;
+                Chosen.Add(Hand[i]);
+            }
+            else if (!chooseFirst&&Hand[i].rank > Chosen.Last().rank + 1)
+                Chosen.Clear();
+            if (Chosen.Count == combination.assist)
+                break;
+        }
+        if (Chosen.Count != combination.assist*2)
+            Chosen.Clear();
+        if (Chosen.Count == 0 && combination.assist >= 4)   //use bomb
+            DealwithBomb(combination, CardPlayer);
     }
 
     private void DrawBestCard(Deck deck, Card availableCard, bool cheat = false)
@@ -82,7 +254,7 @@ namespace CardLib
       {
         if (card.suit == worstSuit)
         {
-          DiscardCard(card);
+          //DiscardCard(card);
           break;
         }
       }

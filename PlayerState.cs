@@ -10,6 +10,7 @@ namespace CardLib
   {
     Inactive,
     Active,
+    Pass,
     MustDiscard,
     Winner,
     Loser

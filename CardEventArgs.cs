@@ -9,6 +9,7 @@ namespace CardLib
   {
     public Card Card { get; set; }
     public Cards Cards { get; set; }
+    public kindsOfCombination CurrentCombination { get; set; }
     public int index { get; set; }
   }
 
